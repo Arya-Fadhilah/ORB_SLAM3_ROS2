@@ -1,8 +1,13 @@
 #ifndef __MONOCULAR_SLAM_NODE_HPP__
 #define __MONOCULAR_SLAM_NODE_HPP__
 
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
+
 
 #include <cv_bridge/cv_bridge.h>
 
@@ -24,12 +29,17 @@ private:
     using ImageMsg = sensor_msgs::msg::Image;
 
     void GrabImage(const sensor_msgs::msg::Image::SharedPtr msg);
+    void PublishOccupancyGrid();
 
     ORB_SLAM3::System* m_SLAM;
 
     cv_bridge::CvImagePtr m_cvImPtr;
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr m_image_subscriber;
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr m_map_publisher;
+    rclcpp::TimerBase::SharedPtr m_map_timer;
+
+    void ProcessingLoop();
 };
 
 #endif

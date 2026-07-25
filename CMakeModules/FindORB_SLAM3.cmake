@@ -5,7 +5,7 @@
 #
 # To help the search ORB_SLAM3_ROOT_DIR environment variable as the path to ORB_SLAM3 root folder
 #  e.g. `set( ORB_SLAM3_ROOT_DIR=~/ORB_SLAM3) `
-set(ORB_SLAM3_ROOT_DIR "~/Install/ORB_SLAM/ORB_SLAM3")
+set(ORB_SLAM3_ROOT_DIR "~/ORB_SLAM3")
 
 # message(${ORB_SLAM3_ROOT_DIR})
 # message(${ORB_SLAM3_ROOT_DIR}/include)
@@ -29,15 +29,18 @@ find_library(DBoW2_LIBRARY NAMES DBoW2
 find_library(g2o_LIBRARY NAMES g2o
              PATHS ${ORB_SLAM3_ROOT_DIR}/Thirdparty/g2o/lib)
 
+# Find built-in Sophus
+find_path(Sophus_INCLUDE_DIR NAMES sophus/se3.hpp 
+            PATHS ${ORB_SLAM3_ROOT_DIR}/Thirdparty/Sophus)
 
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set ORB_SLAM3_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(ORB_SLAM3  DEFAULT_MSG
-                                  ORB_SLAM3_LIBRARY ORB_SLAM3_INCLUDE_DIR DBoW2_INCLUDE_DIR DBoW2_LIBRARY g2o_LIBRARY)
+find_package_handle_standard_args(ORB_SLAM3 DEFAULT_MSG 
+                                  ORB_SLAM3_LIBRARY ORB_SLAM3_INCLUDE_DIR DBoW2_INCLUDE_DIR DBoW2_LIBRARY g2o_LIBRARY Sophus_INCLUDE_DIR)
 
 mark_as_advanced(ORB_SLAM3_INCLUDE_DIR ORB_SLAM3_LIBRARY )
 
 set(ORB_SLAM3_LIBRARIES ${ORB_SLAM3_LIBRARY} ${DBoW2_LIBRARY} ${g2o_LIBRARY})
-set(ORB_SLAM3_INCLUDE_DIRS ${ORB_SLAM3_INCLUDE_DIR} ${DBoW2_INCLUDE_DIR})
+set(ORB_SLAM3_INCLUDE_DIRS ${ORB_SLAM3_INCLUDE_DIR} ${DBoW2_INCLUDE_DIR} ${Sophus_INCLUDE_DIR})
