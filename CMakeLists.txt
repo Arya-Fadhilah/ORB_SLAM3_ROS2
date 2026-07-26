@@ -21,7 +21,10 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(message_filters REQUIRED)
+
+set(Sophus_DIR "$ENV{HOME}/asv_ws/src/ORB_SLAM3/Thirdparty/Sophus/build")
 find_package(Sophus REQUIRED)
+
 find_package(Pangolin REQUIRED)
 find_package(ORB_SLAM3 REQUIRED)
 
