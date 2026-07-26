@@ -45,6 +45,8 @@
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 #include "nav_msgs/msg/occupancy_grid.hpp"
 
 #include "System.h"
@@ -70,10 +72,16 @@ private:
     void LoadImages(const std::string& strSequencePath, const std::string& strTimesFile,
                      std::vector<std::string>& vstrImageFilenames, std::vector<double>& vTimestamps);
 
+    void PublishPointCloud();
+    std::vector<Eigen::Vector3f> FilterOutliersMAD(
+        const std::vector<Eigen::Vector3f>& pts, float threshold = 15.0f);
+    
     ORB_SLAM3::System* m_SLAM;
 
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr m_map_publisher;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr m_pointcloud_publisher;
     rclcpp::TimerBase::SharedPtr m_map_timer;
+    rclcpp::TimerBase::SharedPtr m_pointcloud_timer;
 
     std::vector<std::string> m_vstrImageFilenames;
     std::vector<double> m_vTimestamps;

@@ -20,6 +20,11 @@ KittiFileSlamNode::KittiFileSlamNode(ORB_SLAM3::System* pSLAM, const std::string
     m_map_timer = this->create_wall_timer(
         std::chrono::seconds(2),
         std::bind(&KittiFileSlamNode::PublishOccupancyGrid, this));
+    m_pointcloud_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        "point_cloud", rclcpp::SensorDataQoS());
+    m_pointcloud_timer = this->create_wall_timer(
+        std::chrono::milliseconds(200),   // 5Hz — jauh lebih sering dari grid, karena datanya kecil
+        std::bind(&KittiFileSlamNode::PublishPointCloud, this));
 
     LoadImages(strSequencePath, strTimesFile, m_vstrImageFilenames, m_vTimestamps);
 
@@ -123,4 +128,76 @@ void KittiFileSlamNode::PublishOccupancyGrid()
     }
 
     m_map_publisher->publish(msg);
+}
+
+std::vector<Eigen::Vector3f> KittiFileSlamNode::FilterOutliersMAD(
+    const std::vector<Eigen::Vector3f>& pts, float threshold)
+{
+    if (pts.size() < 10) return pts;
+
+    auto median = [](std::vector<float> v) {
+        size_t n = v.size() / 2;
+        std::nth_element(v.begin(), v.begin() + n, v.end());
+        return v[n];
+    };
+
+    std::vector<float> xs, ys, zs;
+    for (auto& p : pts) { xs.push_back(p.x()); ys.push_back(p.y()); zs.push_back(p.z()); }
+    Eigen::Vector3f centroid(median(xs), median(ys), median(zs));
+
+    std::vector<float> dists;
+    for (auto& p : pts) dists.push_back((p - centroid).norm());
+    float medDist = median(dists);
+
+    std::vector<float> devs;
+    for (float d : dists) devs.push_back(std::fabs(d - medDist));
+    float mad = median(devs) + 1e-6f;
+
+    std::vector<Eigen::Vector3f> clean;
+    for (size_t i = 0; i < pts.size(); i++) {
+        if (std::fabs(dists[i] - medDist) / mad > threshold) continue;
+        clean.push_back(pts[i]);
+    }
+    return clean;
+}
+
+void KittiFileSlamNode::PublishPointCloud()
+{
+    if (m_pointcloud_publisher->get_subscription_count() == 0) return;
+
+    std::vector<ORB_SLAM3::MapPoint*> vpMPs = m_SLAM->GetTrackedMapPoints();
+    if (vpMPs.empty()) return;
+
+    std::vector<Eigen::Vector3f> vPos;
+    vPos.reserve(vpMPs.size());
+    for (auto* pMP : vpMPs) {
+        if (!pMP || pMP->isBad()) continue;
+        Eigen::Vector3f p = pMP->GetWorldPos();
+        if (!p.allFinite()) continue;
+        vPos.push_back(p);
+    }
+    if (vPos.empty()) return;
+
+    std::vector<Eigen::Vector3f> vClean = FilterOutliersMAD(vPos);
+    if (vClean.empty()) return;
+
+    sensor_msgs::msg::PointCloud2 msg;
+    msg.header.stamp = this->now();
+    msg.header.frame_id = "map";   // konsisten dengan PublishOccupancyGrid() yang sudah jalan
+
+    sensor_msgs::PointCloud2Modifier modifier(msg);
+    modifier.setPointCloud2FieldsByString(1, "xyz");
+    modifier.resize(vClean.size());
+
+    sensor_msgs::PointCloud2Iterator<float> iter_x(msg, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(msg, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(msg, "z");
+
+    for (size_t i = 0; i < vClean.size(); ++i, ++iter_x, ++iter_y, ++iter_z) {
+        *iter_x = vClean[i].x();
+        *iter_y = vClean[i].y();
+        *iter_z = vClean[i].z();
+    }
+
+    m_pointcloud_publisher->publish(msg);
 }
