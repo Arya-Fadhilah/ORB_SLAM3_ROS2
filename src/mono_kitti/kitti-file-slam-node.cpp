@@ -26,7 +26,7 @@ KittiFileSlamNode::KittiFileSlamNode(ORB_SLAM3::System* pSLAM, const std::string
         std::chrono::seconds(2),
         std::bind(&KittiFileSlamNode::PublishOccupancyGrid, this));
     m_pointcloud_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-        "point_cloud", rclcpp::SensorDataQoS());
+        "point_cloud", 10);
     m_pointcloud_timer = this->create_wall_timer(
         std::chrono::milliseconds(200),   // 5Hz — jauh lebih sering dari grid, karena datanya kecil
         std::bind(&KittiFileSlamNode::PublishPointCloud, this));
