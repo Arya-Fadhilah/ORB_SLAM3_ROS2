@@ -21,6 +21,8 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(message_filters REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 set(Sophus_DIR "$ENV{HOME}/asv_ws/src/ORB_SLAM3/Thirdparty/Sophus/build")
 find_package(Sophus REQUIRED)
@@ -48,7 +50,7 @@ add_executable(kitti_file_debug
   src/mono_kitti/kitti_file_debug.cpp
   src/mono_kitti/kitti-file-slam-node.cpp
 )
-ament_target_dependencies(kitti_file_debug rclcpp nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
+ament_target_dependencies(kitti_file_debug rclcpp tf2_ros geometry_msgs nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
 
 add_executable(mono_inertial
   src/monocular-inertial/mono_inertial.cpp

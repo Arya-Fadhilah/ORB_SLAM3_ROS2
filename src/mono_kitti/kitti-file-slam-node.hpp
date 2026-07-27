@@ -47,6 +47,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include "nav_msgs/msg/occupancy_grid.hpp"
 
 #include "System.h"
@@ -73,8 +76,8 @@ private:
                      std::vector<std::string>& vstrImageFilenames, std::vector<double>& vTimestamps);
 
     void PublishPointCloud();
-    std::vector<Eigen::Vector3f> FilterOutliersMAD(
-        const std::vector<Eigen::Vector3f>& pts, float threshold = 15.0f);
+    void PublishStaticMapToOdom();
+    void BroadcastOdomToBaseLink(const Sophus::SE3f &Twc, const rclcpp::Time &stamp);
     
     ORB_SLAM3::System* m_SLAM;
 
@@ -85,6 +88,10 @@ private:
 
     std::vector<std::string> m_vstrImageFilenames;
     std::vector<double> m_vTimestamps;
+    std::vector<Eigen::Vector3f> FilterOutliersMAD(
+        const std::vector<Eigen::Vector3f>& pts, float threshold = 15.0f);
+    std::shared_ptr<tf2_ros::TransformBroadcaster> m_tf_broadcaster;
+    std::shared_ptr<tf2_ros::StaticTransformBroadcaster> m_static_tf_broadcaster;
 };
 
 #endif

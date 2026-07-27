@@ -10,10 +10,15 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+
 KittiFileSlamNode::KittiFileSlamNode(ORB_SLAM3::System* pSLAM, const std::string& strSequencePath, const std::string& strTimesFile)
 :   Node("ORB_SLAM3_KITTI_FILE_DEBUG")
 {
     m_SLAM = pSLAM;
+
+    m_tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+    m_static_tf_broadcaster = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+    PublishStaticMapToOdom();
 
     m_map_publisher = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "map", rclcpp::QoS(1).transient_local());
@@ -80,18 +85,19 @@ void KittiFileSlamNode::RunSequence()
     for (size_t ni = 0; ni < nImages && rclcpp::ok(); ni++)
     {
         cv::Mat im = cv::imread(m_vstrImageFilenames[ni], cv::IMREAD_UNCHANGED);
-        if (im.empty())
-        {
-            std::cerr << "Failed to load: " << m_vstrImageFilenames[ni] << std::endl;
-            break;
-        }
+        if (im.empty()) { std::cerr << "Failed to load: " << m_vstrImageFilenames[ni] << std::endl; break; }
 
         double tframe = m_vTimestamps[ni];
-
         std::cout << "processing frame " << ni << ", stamp=" << tframe << std::endl;
-        m_SLAM->TrackMonocular(im, tframe);
 
-        // Proses callback ROS2 (timer publish /map tiap 2 detik) di antara frame
+        Sophus::SE3f Tcw = m_SLAM->TrackMonocular(im, tframe);   // <- sekarang di-capture, tadinya dibuang
+
+        if (m_SLAM->GetTrackingState() == 2)  // 2 = Tracking::OK, jangan broadcast kalau lost/belum init
+        {
+            Sophus::SE3f Twc = Tcw.inverse();
+            BroadcastOdomToBaseLink(Twc, this->now());
+        }
+
         rclcpp::spin_some(this->get_node_base_interface());
     }
 
@@ -200,4 +206,40 @@ void KittiFileSlamNode::PublishPointCloud()
     }
 
     m_pointcloud_publisher->publish(msg);
+}
+
+void KittiFileSlamNode::PublishStaticMapToOdom()
+{
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = this->now();
+    t.header.frame_id = "map";
+    t.child_frame_id = "odom";
+    t.transform.translation.x = 0.0;
+    t.transform.translation.y = 0.0;
+    t.transform.translation.z = 0.0;
+    t.transform.rotation.x = 0.0;
+    t.transform.rotation.y = 0.0;
+    t.transform.rotation.z = 0.0;
+    t.transform.rotation.w = 1.0;
+    m_static_tf_broadcaster->sendTransform(t);
+}
+
+void KittiFileSlamNode::BroadcastOdomToBaseLink(const Sophus::SE3f &Twc, const rclcpp::Time &stamp)
+{
+    Eigen::Vector3f trans = Twc.translation();
+    Eigen::Quaternionf q = Twc.unit_quaternion();
+
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = stamp;
+    t.header.frame_id = "odom";
+    t.child_frame_id = "base_link";   // sesuaikan kalau URDF/robot kamu pakai nama frame lain
+    t.transform.translation.x = trans.x();
+    t.transform.translation.y = trans.y();
+    t.transform.translation.z = trans.z();
+    t.transform.rotation.x = q.x();
+    t.transform.rotation.y = q.y();
+    t.transform.rotation.z = q.z();
+    t.transform.rotation.w = q.w();
+
+    m_tf_broadcaster->sendTransform(t);
 }
