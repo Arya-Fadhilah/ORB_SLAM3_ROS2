@@ -79,6 +79,8 @@ private:
     void PublishStaticMapToOdom();
     void BroadcastOdomToBaseLink(const Sophus::SE3f &Twc, const rclcpp::Time &stamp);
     void PublishFullMapPointCloud();
+    Eigen::Vector3f ConvertPointToRos(const Eigen::Vector3f &p_cam);
+    void ConvertPoseToRos(const Sophus::SE3f &Twc_cam, Eigen::Vector3f &trans_ros, Eigen::Quaternionf &q_ros);
     
     ORB_SLAM3::System* m_SLAM;
 
