@@ -25,12 +25,19 @@ KittiFileSlamNode::KittiFileSlamNode(ORB_SLAM3::System* pSLAM, const std::string
     m_map_timer = this->create_wall_timer(
         std::chrono::seconds(2),
         std::bind(&KittiFileSlamNode::PublishOccupancyGrid, this));
+    
     m_pointcloud_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
         "point_cloud", 10);
     m_pointcloud_timer = this->create_wall_timer(
         std::chrono::milliseconds(200),   // 5Hz — jauh lebih sering dari grid, karena datanya kecil
         std::bind(&KittiFileSlamNode::PublishPointCloud, this));
 
+    m_pointcloud_full_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        "point_cloud_map", 10);
+    m_pointcloud_full_timer = this->create_wall_timer(
+        std::chrono::milliseconds(500),
+        std::bind(&KittiFileSlamNode::PublishFullMapPointCloud, this));
+    
     LoadImages(strSequencePath, strTimesFile, m_vstrImageFilenames, m_vTimestamps);
 
     std::cout << "KittiFileSlamNode: loaded " << m_vstrImageFilenames.size() << " images" << std::endl;
@@ -222,6 +229,40 @@ void KittiFileSlamNode::PublishStaticMapToOdom()
     t.transform.rotation.z = 0.0;
     t.transform.rotation.w = 1.0;
     m_static_tf_broadcaster->sendTransform(t);
+}
+
+void KittiFileSlamNode::PublishFullMapPointCloud() {
+    if (m_pointcloud_full_publisher->get_subscription_count() == 0) return;
+
+    std::vector<ORB_SLAM3::MapPoint*> vpMPs = m_SLAM->GetAllCurrentMapPoints();
+    if (vpMPs.empty()) return;
+
+    std::vector<Eigen::Vector3f> vPos;
+    for (auto* pMP : vpMPs) {
+        if (!pMP || pMP->isBad()) continue;
+        Eigen::Vector3f p = pMP->GetWorldPos();
+        if (!p.allFinite()) continue;
+        vPos.push_back(p);
+    }
+    if (vPos.empty()) return;
+
+    sensor_msgs::msg::PointCloud2 msg;
+    msg.header.stamp = this->now();
+    msg.header.frame_id = "map";
+
+    sensor_msgs::PointCloud2Modifier modifier(msg);
+    modifier.setPointCloud2FieldsByString(1, "xyz");
+    modifier.resize(vPos.size());
+
+    sensor_msgs::PointCloud2Iterator<float> iter_x(msg, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(msg, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(msg, "z");
+    for (size_t i = 0; i < vPos.size(); ++i, ++iter_x, ++iter_y, ++iter_z) {
+        *iter_x = vPos[i].x();
+        *iter_y = vPos[i].y();
+        *iter_z = vPos[i].z();
+    }
+    m_pointcloud_full_publisher->publish(msg);
 }
 
 void KittiFileSlamNode::BroadcastOdomToBaseLink(const Sophus::SE3f &Twc, const rclcpp::Time &stamp)

@@ -78,11 +78,14 @@ private:
     void PublishPointCloud();
     void PublishStaticMapToOdom();
     void BroadcastOdomToBaseLink(const Sophus::SE3f &Twc, const rclcpp::Time &stamp);
+    void PublishFullMapPointCloud();
     
     ORB_SLAM3::System* m_SLAM;
 
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr m_map_publisher;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr m_pointcloud_publisher;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr m_pointcloud_full_publisher;
+    rclcpp::TimerBase::SharedPtr m_pointcloud_full_timer;
     rclcpp::TimerBase::SharedPtr m_map_timer;
     rclcpp::TimerBase::SharedPtr m_pointcloud_timer;
 
