@@ -10,6 +10,13 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+static const Eigen::Matrix3f R_OPT_TO_ROS = []() {
+    Eigen::Matrix3f m;
+    m << 0.0f,  0.0f,  1.0f,
+        -1.0f,  0.0f,  0.0f,
+         0.0f, -1.0f,  0.0f;
+    return m;
+}();
 
 KittiFileSlamNode::KittiFileSlamNode(ORB_SLAM3::System* pSLAM, const std::string& strSequencePath, const std::string& strTimesFile)
 :   Node("ORB_SLAM3_KITTI_FILE_DEBUG")
@@ -185,7 +192,7 @@ void KittiFileSlamNode::PublishPointCloud()
     vPos.reserve(vpMPs.size());
     for (auto* pMP : vpMPs) {
         if (!pMP || pMP->isBad()) continue;
-        Eigen::Vector3f p = pMP->GetWorldPos();
+        Eigen::Vector3f p = ConvertPointToRos(pMP->GetWorldPos());
         if (!p.allFinite()) continue;
         vPos.push_back(p);
     }
@@ -240,7 +247,7 @@ void KittiFileSlamNode::PublishFullMapPointCloud() {
     std::vector<Eigen::Vector3f> vPos;
     for (auto* pMP : vpMPs) {
         if (!pMP || pMP->isBad()) continue;
-        Eigen::Vector3f p = pMP->GetWorldPos();
+        Eigen::Vector3f p = ConvertPointToRos(pMP->GetWorldPos());
         if (!p.allFinite()) continue;
         vPos.push_back(p);
     }
@@ -267,20 +274,33 @@ void KittiFileSlamNode::PublishFullMapPointCloud() {
 
 void KittiFileSlamNode::BroadcastOdomToBaseLink(const Sophus::SE3f &Twc, const rclcpp::Time &stamp)
 {
-    Eigen::Vector3f trans = Twc.translation();
-    Eigen::Quaternionf q = Twc.unit_quaternion();
+    Eigen::Vector3f trans_ros;
+    Eigen::Quaternionf q_ros;
+    ConvertPoseToRos(Twc, trans_ros, q_ros);
 
     geometry_msgs::msg::TransformStamped t;
     t.header.stamp = stamp;
     t.header.frame_id = "odom";
-    t.child_frame_id = "base_link";   // sesuaikan kalau URDF/robot kamu pakai nama frame lain
-    t.transform.translation.x = trans.x();
-    t.transform.translation.y = trans.y();
-    t.transform.translation.z = trans.z();
-    t.transform.rotation.x = q.x();
-    t.transform.rotation.y = q.y();
-    t.transform.rotation.z = q.z();
-    t.transform.rotation.w = q.w();
+    t.child_frame_id = "base_link";
+    t.transform.translation.x = trans_ros.x();
+    t.transform.translation.y = trans_ros.y();
+    t.transform.translation.z = trans_ros.z();
+    t.transform.rotation.x = q_ros.x();
+    t.transform.rotation.y = q_ros.y();
+    t.transform.rotation.z = q_ros.z();
+    t.transform.rotation.w = q_ros.w();
 
     m_tf_broadcaster->sendTransform(t);
+}
+
+Eigen::Vector3f KittiFileSlamNode::ConvertPointToRos(const Eigen::Vector3f &p_cam)
+{
+    return R_OPT_TO_ROS * p_cam;
+}
+
+void KittiFileSlamNode::ConvertPoseToRos(const Sophus::SE3f &Twc_cam, Eigen::Vector3f &trans_ros, Eigen::Quaternionf &q_ros)
+{
+    trans_ros = R_OPT_TO_ROS * Twc_cam.translation();
+    Eigen::Matrix3f R_ros = R_OPT_TO_ROS * Twc_cam.rotationMatrix() * R_OPT_TO_ROS.transpose();
+    q_ros = Eigen::Quaternionf(R_ros);
 }
