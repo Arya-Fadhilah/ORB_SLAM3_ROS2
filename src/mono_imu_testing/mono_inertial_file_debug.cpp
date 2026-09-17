@@ -13,9 +13,10 @@
 #include "System.h"
 #include "mono-inertial-file-slam-node.hpp"
 
+
 int main(int argc, char** argv)
 {
-    if (argc != 6)
+    if (argc < 6)
     {
         std::cerr << "Usage: ros2 run orbslam3 mono_inertial_file_debug "
                   << "<path_to_vocabulary> <path_to_settings> <path_to_image_folder> "
@@ -25,10 +26,18 @@ int main(int argc, char** argv)
 
     rclcpp::init(argc, argv);
 
-    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_MONOCULAR, true);
+    bool bUseViewer = true;
+    if (argc >= 7) bUseViewer = (std::string(argv[6]) != "0");
 
-    auto node = std::make_shared<MonoInertialFileSlamNode>(&SLAM, argv[3], argv[4], argv[5]);
-    node->RunSequence();
+    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_MONOCULAR, bUseViewer);
+
+    {
+        std::string format = "tumvi";
+        if (argc >= 8) format = argv[7];
+        
+        auto node = std::make_shared<MonoInertialFileSlamNode>(&SLAM, argv[3], argv[4], argv[5], format);
+        node->RunSequence();
+    }   // node hancur di sini, context rclcpp masih hidup
 
     rclcpp::shutdown();
     return 0;

@@ -11,7 +11,7 @@
 
 int main(int argc, char** argv)
 {
-    if (argc != 5)
+    if (argc < 5)
     {
         std::cerr << "Usage: ros2 run orbslam3 kitti_file_debug <path_to_vocabulary> <path_to_settings> <path_to_sequence> <path_to_times_file>" << std::endl;
         return 1;
@@ -19,10 +19,10 @@ int main(int argc, char** argv)
 
     rclcpp::init(argc, argv);
 
-    //bool bUseViewer = true;
-    //if (argc >= 6) bUseViewer = (std::string(argv[5]) != "0");
+    bool bUseViewer = true;
+    if (argc >= 6) bUseViewer = (std::string(argv[5]) != "0");
 
-    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, true);
+    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, bUseViewer);
 
     auto node = std::make_shared<KittiFileSlamNode>(&SLAM, argv[3], argv[4]);
     node->RunSequence();

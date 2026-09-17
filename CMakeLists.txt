@@ -47,8 +47,8 @@ add_executable(mono
 ament_target_dependencies(mono rclcpp nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
 
 add_executable(kitti_file_debug
-  src/mono_kitti/kitti_file_debug.cpp
-  src/mono_kitti/kitti-file-slam-node.cpp
+  src/mono_testing/kitti_file_debug.cpp
+  src/mono_testing/kitti-file-slam-node.cpp
 )
 ament_target_dependencies(kitti_file_debug rclcpp tf2_ros geometry_msgs nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
 
@@ -59,10 +59,10 @@ add_executable(mono_inertial
 ament_target_dependencies(mono_inertial rclcpp nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
 
 add_executable(mono_inertial_file_debug
-  src/mono_imu_euroc_tum/mono_inertial_file_debug.cpp
-  src/mono_imu_euroc_tum/mono-inertial-file-slam-node.cpp
+  src/mono_imu_testing/mono_inertial_file_debug.cpp
+  src/mono_imu_testing/mono-inertial-file-slam-node.cpp
 )
-ament_target_dependencies(mono_inertial_file_debug rclcpp nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
+ament_target_dependencies(mono_inertial_file_debug rclcpp tf2_ros geometry_msgs nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
 
 add_executable(rgbd
   src/rgbd/rgbd.cpp
