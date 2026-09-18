@@ -1,11 +1,6 @@
 Terminal 1:
 
-ros2 run orbslam3 mono_inertial_file_debug   
-    ~/asv_ws/src/ORB_SLAM3/Vocabulary/ORBvoc.txt   
-    /mnt/e/SLAM_Dataset/ROVER/t264.yaml   
-    /mnt/e/SLAM_Dataset/ROVER/realsense_T265/cam_left   
-    /mnt/e/SLAM_Dataset/ROVER/realsense_T265/cam_left.txt   
-    /mnt/e/SLAM_Dataset/ROVER/realsense_T265/imu/imu.txt   0 rover
+ros2 run orbslam3 mono_inertial_file_debug   ~/asv_ws/src/ORB_SLAM3/Vocabulary/ORBvoc.txt   /mnt/e/SLAM_Dataset/ROVER/t264.yaml   /mnt/e/SLAM_Dataset/ROVER/realsense_T265/cam_left   /mnt/e/SLAM_Dataset/ROVER/realsense_T265/cam_left_from2700.txt   /mnt/e/SLAM_Dataset/ROVER/realsense_T265/imu/imu_from2700.txt   0 rover
 
 cd ~/asv_ws && source install/setup.bash
 ros2 run orbslam3 mono_inertial_file_debug \
