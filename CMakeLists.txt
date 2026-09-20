@@ -24,7 +24,7 @@ find_package(message_filters REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
-set(Sophus_DIR "$ENV{HOME}/asv_ws/src/ORB_SLAM3/Thirdparty/Sophus/build")
+set(Sophus_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../ORB_SLAM3/Thirdparty/Sophus/build")
 find_package(Sophus REQUIRED)
 
 find_package(Pangolin REQUIRED)
